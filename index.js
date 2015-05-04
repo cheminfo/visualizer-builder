@@ -51,7 +51,12 @@ function pull() {
 
         if (stdout.indexOf('Already up-to-date') > -1) {
             console.log('Repository up-to-date');
-            pullTags();
+            if (missing(join(outDir, 'HEAD-min'))) {
+                console.log('HEAD-min is missing');
+                updateHeadMin();
+            } else {
+                pullTags();
+            }
         } else {
             console.log('New commits found');
             updateHeadMin();
@@ -158,5 +163,14 @@ function createCopier(sourceDir, destDir) {
     return function (file) {
         let content = fs.readFileSync(join(sourceDir, file));
         fs.writeFileSync(join(destDir, file), content);
+    }
+}
+
+function missing(dir) {
+    try {
+        fs.accessSync(dir);
+        return false;
+    } catch (e) {
+        return true;
     }
 }
