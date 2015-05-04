@@ -37,9 +37,10 @@ if (missing(options.build) || missing(join(options.build, '.git'))) {
 
 console.log('Checking symbolic links');
 
-createSymlinkIfMissing('HEAD', options.head);
-createSymlinkIfMissing('src', options.head);
-createSymlinkIfMissing('head', options.head);
+const headSrc = join(options.head, 'src');
+createSymlinkIfMissing('HEAD', headSrc);
+createSymlinkIfMissing('src', headSrc);
+createSymlinkIfMissing('head', headSrc);
 
 createSymlinkIfMissing('testcase', join(options.head, 'testcase'));
 createSymlinkIfMissing('doc', join(options.head, 'doc'));
