@@ -161,12 +161,10 @@ function checkRelease() {
 }
 
 function finish() {
-    if (tags.length) {
-        // create versions.json
-        let items = getBuildedReleaseList();
-        items.unshift('HEAD', 'HEAD-min', 'latest');
-        fs.writeFileSync(join(outDir, 'versions.json'), JSON.stringify(items));
-    }
+    // create versions.json
+    let items = getBuildedReleaseList();
+    items.unshift('HEAD', 'HEAD-min', 'latest');
+    fs.writeFileSync(join(outDir, 'versions.json'), JSON.stringify(items));
     console.log('Visualizer update finished');
 }
 
