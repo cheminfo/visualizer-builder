@@ -22,10 +22,6 @@ const execOptionsBuild = {
     cwd: visualizerBuild
 };
 
-console.log(new Date().toISOString());
-console.log('Starting visualizer update');
-pull();
-
 let tags = [];
 let latest = false;
 function pull() {
@@ -97,7 +93,7 @@ function pullTags() {
             async.eachSeries(tags, buildTag, checkoutMaster);
         } else {
             console.log('No new tag');
-            finish();
+            checkRelease();
         }
     });
 }
@@ -142,17 +138,32 @@ function linkLatest() {
         }
         fs.symlinkSync(join(outDir, latest), latestPath);
     }
-    finish();
+    checkRelease();
 }
 
-const versionReg = /^v\d/;
+function checkRelease() {
+    let stableList = getBuildedReleaseList(true);
+    if (!stableList.length) {
+        console.log('No release found, building latest stable tag');
+        let tags = child_process.execFileSync('git', ['tag', '-l'], execOptionsBuild).toString();
+        let list = tags.split(/[\r\n]+/g).filter(getFilter(true)).sort(semver.rcompare);
+        if (list.length === 0) {
+            console.log('No tag to build');
+            finish();
+        } else {
+            let tag = list[0];
+            latest = tag;
+            buildTag(tag, linkLatest);
+        }
+    } else {
+        finish();
+    }
+}
+
 function finish() {
     if (tags.length) {
         // create versions.json
-        let items = fs.readdirSync(outDir).filter(function (item) {
-            return versionReg.test(item);
-        });
-        items.sort(semver.rcompare);
+        let items = getBuildedReleaseList();
         items.unshift('HEAD', 'HEAD-min', 'latest');
         fs.writeFileSync(join(outDir, 'versions.json'), JSON.stringify(items));
     }
@@ -174,3 +185,24 @@ function missing(dir) {
         return true;
     }
 }
+
+const versionReg = /^v\d/;
+function getFilter(onlyStable) {
+    return function (item) {
+        let ok = versionReg.test(item) && semver.valid(item);
+        if (ok && onlyStable) {
+            return semver(item).prerelease.length === 0;
+        }
+        return ok;
+    };
+}
+
+function getBuildedReleaseList(onlyStable) {
+    let items = fs.readdirSync(outDir).filter(getFilter(onlyStable));
+    items.sort(semver.rcompare);
+    return items;
+}
+
+console.log(new Date().toISOString());
+console.log('Starting visualizer update');
+pull();
