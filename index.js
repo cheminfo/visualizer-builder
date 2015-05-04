@@ -8,18 +8,11 @@ const fs = require('fs');
 const async = require('async');
 const semver = require('semver');
 
-let options;
-try {
-    options = require('./config.json');
-} catch (e) {
-    console.error('Could not find config.json. Please copy config.default.json and use it as an example');
-    process.exit(1);
-}
+const options = require('./options');
 
-const visualizerRepo = path.resolve(options.repo);
-const visualizerHead = join(visualizerRepo, 'head');
-const visualizerBuild = join(visualizerRepo, 'build');
-const cdnDir = path.resolve(options.out);
+const visualizerHead = options.head;
+const visualizerBuild = options.build;
+const outDir = options.out;
 
 const execOptionsHead = {
     cwd: visualizerHead
@@ -67,8 +60,8 @@ function pull() {
 }
 
 function updateHeadMin() {
-    let cdnHeadMinFinal = join(cdnDir, 'HEAD-min');
-    let cdnHeadMinOld = join(cdnDir, 'oldHEAD-min');
+    let outHeadMinFinal = join(outDir, 'HEAD-min');
+    let outHeadMinOld = join(outDir, 'oldHEAD-min');
     console.log('Building the visualizer HEAD-min');
     child_process.execFile('npm', ['install'], execOptionsHead, function (err) {
         if (err) throw err;
@@ -76,13 +69,13 @@ function updateHeadMin() {
             if (err) throw err;
             let exist = false;
             try {
-                fs.renameSync(cdnHeadMinFinal, cdnHeadMinOld);
+                fs.renameSync(outHeadMinFinal, outHeadMinOld);
                 exist = true;
             } catch (e) {
             }
-            fs.renameSync(join(visualizerHead, 'build'), cdnHeadMinFinal);
+            fs.renameSync(join(visualizerHead, 'build'), outHeadMinFinal);
             if (exist) {
-                remove.removeSync(cdnHeadMinOld);
+                remove.removeSync(outHeadMinOld);
             }
             console.log('HEAD-min version copied');
             pullTags();
@@ -119,8 +112,8 @@ function doBuild(version, callback) {
         if (err) throw err;
         child_process.execFile('npm', ['run', 'build'], execOptionsBuild, function (err) {
             if (err) throw err;
-            let cdnBuild = join(cdnDir, version);
-            fs.renameSync(join(visualizerBuild, 'build'), cdnBuild);
+            let outBuild = join(outDir, version);
+            fs.renameSync(join(visualizerBuild, 'build'), outBuild);
             console.log(version + ' version copied');
             callback();
         });
@@ -136,13 +129,13 @@ function checkoutMaster() {
 
 function linkLatest() {
     if (latest) {
-        let latestPath = join(cdnDir, 'latest');
+        let latestPath = join(outDir, 'latest');
         console.log('Creating link to new latest release : ' + latest);
         try {
             fs.unlinkSync(latestPath);
         } catch (e) {
         }
-        fs.symlinkSync(join(cdnDir, latest), latestPath);
+        fs.symlinkSync(join(outDir, latest), latestPath);
     }
     finish();
 }
@@ -151,12 +144,12 @@ const versionReg = /^v\d/;
 function finish() {
     if (tags.length) {
         // create versions.json
-        let items = fs.readdirSync(cdnDir).filter(function (item) {
+        let items = fs.readdirSync(outDir).filter(function (item) {
             return versionReg.test(item);
         });
         items.sort(semver.rcompare);
         items.unshift('HEAD', 'HEAD-min', 'latest');
-        fs.writeFileSync(join(cdnDir, 'versions.json'), JSON.stringify(items));
+        fs.writeFileSync(join(outDir, 'versions.json'), JSON.stringify(items));
     }
     console.log('Visualizer update finished');
 }
