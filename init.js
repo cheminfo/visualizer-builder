@@ -48,6 +48,13 @@ createSymlinkIfMissing('doc', join(options.head, 'doc'));
 createSymlinkIfMissing('min', join(options.out, 'HEAD-min'));
 createSymlinkIfMissing('build', join(options.out, 'HEAD-min'));
 
+console.log('Copy static files');
+
+var staticFiles = fs.readdirSync('./static');
+for (var i = 0; i < staticFiles.length; i++) {
+    fs.writeFileSync(join(options.out, staticFiles[i]), fs.readFileSync(join('./static', staticFiles[i])));
+}
+
 function missing(dir) {
     try {
         fs.accessSync(dir);
