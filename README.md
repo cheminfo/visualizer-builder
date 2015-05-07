@@ -24,6 +24,7 @@ This command will :
  * min / build
  * testcase
  * doc
+* copy the files located in `static` folder to `out`
 
 ## Usage
 
