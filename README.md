@@ -29,6 +29,13 @@ This command will :
 
 `npm run build`
 
+## Merging versions
+
+To free some place on the hard drive, it can be useful to merge very close versions into one:  
+`npm run merge -- v0.0.0 v0.0.1`
+
+This command will remove `v0.0.0` and replace it with a symlink that points to `v0.0.1`
+
 ## License
 
   [MIT](./LICENSE)
