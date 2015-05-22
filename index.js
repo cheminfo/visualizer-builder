@@ -27,7 +27,7 @@ let latest = false;
 function pull() {
     // Update to latest commit
     console.log('Pulling latest changes');
-    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'gh-pages'], execOptionsHead, function (err, stdout, stderr) {
+    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], execOptionsHead, function (err, stdout, stderr) {
         if (err) throw err;
         // Check if new tags were found
         if (stderr.indexOf('[new tag]') >= 0) {
@@ -86,7 +86,7 @@ function updateHeadMin() {
 
 function pullTags() {
     // Get latest tags
-    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'gh-pages'], execOptionsBuild, function (err) {
+    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], execOptionsBuild, function (err) {
         if (err) throw err;
         if (tags.length) {
             console.log('Building ' + tags.length + ' new tag(s)');
@@ -122,7 +122,7 @@ function doBuild(version, callback) {
 }
 
 function checkoutMaster() {
-    child_process.execFile('git', ['checkout', 'gh-pages'], execOptionsBuild, function (err) {
+    child_process.execFile('git', ['checkout', 'master'], execOptionsBuild, function (err) {
         if (err) throw err;
         linkLatest();
     });

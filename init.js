@@ -22,14 +22,14 @@ if (missing(options.out)) {
 console.log('Checking visualizer clones');
 
 if (missing(options.head) || missing(join(options.head, '.git'))) {
-    cp.execFileSync('git', ['clone', 'https://github.com/NPellet/visualizer.git', 'head'], {
+    cp.execFileSync('git', ['clone', '-b', 'master','https://github.com/NPellet/visualizer.git', 'head'], {
         cwd: options.repo
     });
     console.log('Cloned visualizer-head');
 }
 
 if (missing(options.build) || missing(join(options.build, '.git'))) {
-    cp.execFileSync('git', ['clone', 'head', 'build'], {
+    cp.execFileSync('git', ['clone', '-b', 'master', 'head', 'build'], {
         cwd: options.repo
     });
     console.log('Cloned visualizer-build');
