@@ -27,6 +27,7 @@ let latest = false;
 function pull() {
     // Update to latest commit
     console.log('Pulling latest changes');
+    child_process.execFileSync('git', ['reset', '--hard'], execOptionsHead); // make sure there are no residual local changes
     child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], execOptionsHead, function (err, stdout, stderr) {
         if (err) throw err;
         // Check if new tags were found
@@ -86,6 +87,7 @@ function updateHeadMin() {
 
 function pullTags() {
     // Get latest tags
+    child_process.execFileSync('git', ['reset', '--hard'], execOptionsBuild); // make sure there are no residual local changes
     child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], execOptionsBuild, function (err) {
         if (err) throw err;
         if (tags.length) {
@@ -99,6 +101,7 @@ function pullTags() {
 }
 
 function buildTag(tag, callback) {
+    child_process.execFileSync('git', ['reset', '--hard'], execOptionsBuild); // make sure there are no residual local changes
     child_process.execFile('git', ['checkout', 'tags/' + tag], execOptionsBuild, function (err) {
         if (err) throw err;
         console.log('Checked out ' + tag);
@@ -122,6 +125,7 @@ function doBuild(version, callback) {
 }
 
 function checkoutMaster() {
+    child_process.execFileSync('git', ['reset', '--hard'], execOptionsBuild); // make sure there are no residual local changes
     child_process.execFile('git', ['checkout', 'master'], execOptionsBuild, function (err) {
         if (err) throw err;
         linkLatest();
