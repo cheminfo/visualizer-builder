@@ -4,6 +4,9 @@ const fs = require('fs');
 const cp = require('child_process');
 const join = require('path').join;
 const mkdirp = require('mkdirp');
+const async = require('async');
+const semver = require('semver');
+const targz = require('tar.gz');
 
 const options = require('./options');
 
@@ -54,6 +57,21 @@ var staticFiles = fs.readdirSync('./static');
 for (var i = 0; i < staticFiles.length; i++) {
     fs.writeFileSync(join(options.out, staticFiles[i]), fs.readFileSync(join('./static', staticFiles[i])));
 }
+
+console.log('Create missing tarballs');
+
+var outContents = fs.readdirSync(options.out);
+async.eachSeries(outContents, function (data, done) {
+    if(data.startsWith('v') && semver.valid(data)) {
+        targz().compress(join(options.out, data), join(options.out, data + '.tar.gz'), function (err) {
+            if (err) return done(err);
+            done();
+        });
+    }
+    done();
+}, function (e) {
+    if (e) throw e;
+});
 
 function missing(dir) {
     try {
