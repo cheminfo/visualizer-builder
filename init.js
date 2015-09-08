@@ -62,11 +62,20 @@ console.log('Create missing tarballs');
 
 var outContents = fs.readdirSync(options.out);
 async.eachSeries(outContents, function (data, done) {
-    if(data.startsWith('v') && semver.valid(data)) {
-        targz().compress(join(options.out, data), join(options.out, data + '.tar.gz'), function (err) {
-            if (err) return done(err);
+    var folder = join(options.out, data);
+    var tgz = join(options.out, data + '.tar.gz');
+    if(data.startsWith('v') && semver.valid(data) && missing(tgz)) {
+        var stat = fs.lstatSync(folder);
+        if (stat.isSymbolicLink()) {
+            var dest = fs.readlinkSync(folder) + '.tar.gz';
+            fs.symlinkSync(dest, tgz);
             done();
-        });
+        } else {
+            targz().compress(folder, tgz, function (err) {
+                if (err) return done(err);
+                done();
+            });
+        }
     }
     done();
 }, function (e) {
