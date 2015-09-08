@@ -7,6 +7,7 @@ const join = path.join;
 const fs = require('fs');
 const async = require('async');
 const semver = require('semver');
+const targz = require('tar.gz');
 
 const options = require('./options');
 
@@ -105,11 +106,11 @@ function buildTag(tag, callback) {
     child_process.execFile('git', ['checkout', 'tags/' + tag], execOptionsBuild, function (err) {
         if (err) throw err;
         console.log('Checked out ' + tag);
-        doBuild(tag, callback);
+        doBuildTag(tag, callback);
     });
 }
 
-function doBuild(version, callback) {
+function doBuildTag(version, callback) {
     // Launch the building script
     console.log('Building the visualizer ' + version);
     child_process.execFile('npm', ['install'], execOptionsBuild, function (err) {
@@ -119,7 +120,11 @@ function doBuild(version, callback) {
             let outBuild = join(outDir, version);
             fs.renameSync(join(visualizerBuild, 'build'), outBuild);
             console.log(version + ' version copied');
-            callback();
+            targz().compress(outBuild, outBuild + '.tar.gz', function (err) {
+                if (err) throw err;
+                console.log(version + '.tar.gz created');
+                callback();
+            });
         });
     });
 }
