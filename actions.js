@@ -22,7 +22,9 @@ program
             return console.error('"from" must be lower that "to"');
         }
         remove(join(out, from));
+        fs.unlinkSync(join(out, from + '.tar.gz'));
         fs.symlinkSync(join(out, to), join(out, from));
+        fs.symlinkSync(join(out, to + '.tar.gz'), join(out, from + '.tar.gz'));
     });
 
 program.parse(process.argv);
