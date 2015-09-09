@@ -64,7 +64,7 @@ var outContents = fs.readdirSync(options.out);
 async.eachSeries(outContents, function (data, done) {
     var folder = join(options.out, data);
     var tgz = join(options.out, data + '.tar.gz');
-    if(data.startsWith('v') && semver.valid(data) && missing(tgz)) {
+    if((data === 'latest' || data.endsWith('min') || (data.startsWith('v') && semver.valid(data))) && missing(tgz)) {
         var stat = fs.lstatSync(folder);
         if (stat.isSymbolicLink()) {
             var dest = fs.readlinkSync(folder) + '.tar.gz';

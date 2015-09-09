@@ -81,7 +81,11 @@ function updateHeadMin() {
                 remove.removeSync(outHeadMinOld);
             }
             console.log('HEAD-min version copied');
-            pullTags();
+            targz().compress(outHeadMinFinal, outHeadMinFinal + '.tar.gz', function (err) {
+                if (err) throw err;
+                console.log('HEAD-min.tar.gz created');
+                pullTags();
+            });
         });
     });
 }
@@ -141,11 +145,8 @@ function linkLatest() {
     if (latest) {
         let latestPath = join(outDir, 'latest');
         console.log('Creating link to new latest release : ' + latest);
-        try {
-            fs.unlinkSync(latestPath);
-        } catch (e) {
-        }
-        fs.symlinkSync(join(outDir, latest), latestPath);
+        replaceSymlink(join(outDir, latest), latestPath);
+        replaceSymlink(join(outDir, latest + '.tar.gz'), latestPath + '.tar.gz');
     }
     checkRelease();
 }
@@ -208,6 +209,14 @@ function getBuildedReleaseList(onlyStable) {
     let items = fs.readdirSync(outDir).filter(getFilter(onlyStable));
     items.sort(semver.rcompare);
     return items;
+}
+
+function replaceSymlink(dest, target) {
+    try {
+        fs.unlinkSync(target);
+    } catch (e) {
+    }
+    fs.symlinkSync(dest, target);
 }
 
 console.log(new Date().toISOString());
