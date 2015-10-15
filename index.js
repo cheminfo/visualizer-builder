@@ -81,7 +81,7 @@ function updateHeadMin() {
                 remove.removeSync(outHeadMinOld);
             }
             console.log('HEAD-min version copied');
-            targz().compress(outHeadMinFinal, outHeadMinFinal + '.tar.gz', function (err) {
+            targz(null, {fromBase: true}).compress(outHeadMinFinal, outHeadMinFinal + '.tar.gz', function (err) {
                 if (err) throw err;
                 console.log('HEAD-min.tar.gz created');
                 pullTags();
@@ -124,7 +124,7 @@ function doBuildTag(version, callback) {
             let outBuild = join(outDir, version);
             fs.renameSync(join(visualizerBuild, 'build'), outBuild);
             console.log(version + ' version copied');
-            targz().compress(outBuild, outBuild + '.tar.gz', function (err) {
+            targz(null, {fromBase: true}).compress(outBuild, outBuild + '.tar.gz', function (err) {
                 if (err) throw err;
                 console.log(version + '.tar.gz created');
                 callback();

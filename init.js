@@ -71,7 +71,7 @@ async.eachSeries(outContents, function (data, done) {
             fs.symlinkSync(dest, tgz);
             done();
         } else {
-            targz().compress(folder, tgz, function (err) {
+            targz(null, {fromBase: true}).compress(folder, tgz, function (err) {
                 if (err) return done(err);
                 done();
             });
