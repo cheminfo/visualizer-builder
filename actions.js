@@ -19,7 +19,7 @@ program
             return;
         }
         if (!semver.lt(sFrom, sTo)) {
-            return console.error('"from" must be lower that "to"');
+            return console.error('"from" must be lower than "to"');
         }
         remove(join(out, from));
         fs.unlinkSync(join(out, from + '.tar.gz'));
