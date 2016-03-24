@@ -14,22 +14,34 @@ const options = require('./options');
 const visualizerHead = options.head;
 const visualizerBuild = options.build;
 const outDir = options.out;
+const gitTimeout = 60000; // 1 minute
 
 const execOptionsHead = {
     cwd: visualizerHead
+};
+
+const gitExecOptionsHead = {
+    cwd: visualizerHead,
+    timeout: gitTimeout
 };
 
 const execOptionsBuild = {
     cwd: visualizerBuild
 };
 
+const gitExecOptionsBuild = {
+    cwd: visualizerBuild,
+    timeout: gitTimeout
+};
+
+
 let tags = [];
 let latest = false;
 function pull() {
     // Update to latest commit
     console.log('Pulling latest changes');
-    child_process.execFileSync('git', ['reset', '--hard'], execOptionsHead); // make sure there are no residual local changes
-    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], execOptionsHead, function (err, stdout, stderr) {
+    child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsHead); // make sure there are no residual local changes
+    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], gitExecOptionsHead, function (err, stdout, stderr) {
         if (err) throw err;
         // Check if new tags were found
         if (stderr.indexOf('[new tag]') >= 0) {
@@ -92,8 +104,8 @@ function updateHeadMin() {
 
 function pullTags() {
     // Get latest tags
-    child_process.execFileSync('git', ['reset', '--hard'], execOptionsBuild); // make sure there are no residual local changes
-    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], execOptionsBuild, function (err) {
+    child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsBuild); // make sure there are no residual local changes
+    child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], gitExecOptionsBuild, function (err) {
         if (err) throw err;
         if (tags.length) {
             console.log('Building ' + tags.length + ' new tag(s)');
@@ -106,8 +118,8 @@ function pullTags() {
 }
 
 function buildTag(tag, callback) {
-    child_process.execFileSync('git', ['reset', '--hard'], execOptionsBuild); // make sure there are no residual local changes
-    child_process.execFile('git', ['checkout', 'tags/' + tag], execOptionsBuild, function (err) {
+    child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsBuild); // make sure there are no residual local changes
+    child_process.execFile('git', ['checkout', 'tags/' + tag], gitExecOptionsBuild, function (err) {
         if (err) throw err;
         console.log('Checked out ' + tag);
         doBuildTag(tag, callback);
@@ -134,8 +146,8 @@ function doBuildTag(version, callback) {
 }
 
 function checkoutMaster() {
-    child_process.execFileSync('git', ['reset', '--hard'], execOptionsBuild); // make sure there are no residual local changes
-    child_process.execFile('git', ['checkout', 'master'], execOptionsBuild, function (err) {
+    child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsBuild); // make sure there are no residual local changes
+    child_process.execFile('git', ['checkout', 'master'], gitExecOptionsBuild, function (err) {
         if (err) throw err;
         linkLatest();
     });
@@ -155,7 +167,7 @@ function checkRelease() {
     let stableList = getBuildedReleaseList(true);
     if (!stableList.length) {
         console.log('No release found, building latest stable tag');
-        let tags = child_process.execFileSync('git', ['tag', '-l'], execOptionsBuild).toString();
+        let tags = child_process.execFileSync('git', ['tag', '-l'], gitExecOptionsBuild).toString();
         let list = tags.split(/[\r\n]+/g).filter(getFilter(true)).sort(semver.rcompare);
         if (list.length === 0) {
             console.log('No tag to build');
