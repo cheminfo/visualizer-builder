@@ -78,9 +78,9 @@ function updateHeadMin() {
     let outHeadMinFinal = join(outDir, 'HEAD-min');
     let outHeadMinOld = join(outDir, 'oldHEAD-min');
     console.log('Building the visualizer HEAD-min');
-    child_process.execFile('npm', ['install'], execOptionsHead, function (err) {
+    child_process.execFile('yarn', execOptionsHead, function (err) {
         if (err) throw err;
-        child_process.execFile('npm', ['run', 'build'], execOptionsHead, function (err) {
+        child_process.execFile('yarn', ['run', 'build'], execOptionsHead, function (err) {
             if (err) throw err;
             let exist = false;
             try {
@@ -129,9 +129,9 @@ function buildTag(tag, callback) {
 function doBuildTag(version, callback) {
     // Launch the building script
     console.log('Building the visualizer ' + version);
-    child_process.execFile('npm', ['install'], execOptionsBuild, function (err) {
+    child_process.execFile('yarn', execOptionsBuild, function (err) {
         if (err) throw err;
-        child_process.execFile('npm', ['run', 'build'], execOptionsBuild, function (err) {
+        child_process.execFile('yarn', ['run', 'build'], execOptionsBuild, function (err) {
             if (err) throw err;
             let outBuild = join(outDir, version);
             fs.renameSync(join(visualizerBuild, 'build'), outBuild);
