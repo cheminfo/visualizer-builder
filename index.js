@@ -59,7 +59,7 @@ function pull() {
             }
         }
 
-        if (stdout.indexOf('Already up-to-date') > -1) {
+        if (stdout.indexOf('Already up to date') > -1) {
             console.log('Repository up-to-date');
             if (missing(join(outDir, 'HEAD-min'))) {
                 console.log('HEAD-min is missing');
