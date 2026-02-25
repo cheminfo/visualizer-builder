@@ -26,5 +26,8 @@
     "semver": "^4.3.6",
     "tar.gz": "^1.0.1"
   },
-  "private": true
+  "private": true,
+  "volta": {
+    "node": "20.20.0"
+  }
 }
