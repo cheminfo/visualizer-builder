@@ -35,8 +35,14 @@ const gitExecOptionsBuild = {
 };
 
 
-let tags = [];
-let latest = false;
+// List of new v* tags to build
+let newVersionTags = [];
+
+// Aliases to v* tags to renew symlinks for
+// Key: alias name
+// Value: version tag
+const aliases = new Map();
+
 function pull() {
     // Update to latest commit
     console.log('Pulling latest changes');
@@ -50,10 +56,10 @@ function pull() {
             for (let i = 0; i < lines.length; i++) {
                 let result = reg.exec(lines[i]);
                 if (result && result[1][0] === 'v') {
-                    tags.push(result[1]);
+                    newVersionTags.push(result[1]);
                     let version = semver(result[1]);
                     if (!version.prerelease.length) {
-                        latest = result[1];
+                        aliases.set(`v${version.major}-latest`,result[1]);
                     }
                 }
             }
@@ -65,7 +71,7 @@ function pull() {
                 console.log('HEAD-min is missing');
                 updateHeadMin();
             } else {
-                pullTags();
+                buildTags();
             }
         } else {
             console.log('New commits found');
@@ -78,38 +84,41 @@ function updateHeadMin() {
     let outHeadMinFinal = join(outDir, 'HEAD-min');
     let outHeadMinOld = join(outDir, 'oldHEAD-min');
     console.log('Building the visualizer HEAD-min');
-    child_process.execFile('npm', ['install'], execOptionsHead, function (err) {
+    child_process.execFile('npm', ['ci'], execOptionsHead, function (err) {
         if (err) throw err;
-        child_process.execFile('npm', ['run', 'build'], execOptionsHead, function (err) {
-            if (err) throw err;
-            let exist = false;
-            try {
-                fs.renameSync(outHeadMinFinal, outHeadMinOld);
-                exist = true;
-            } catch (e) {
-            }
-            fs.renameSync(join(visualizerHead, 'build'), outHeadMinFinal);
-            if (exist) {
-                remove.removeSync(outHeadMinOld);
-            }
-            console.log('HEAD-min version copied');
-            targz(null, {fromBase: true}).compress(outHeadMinFinal, outHeadMinFinal + '.tar.gz', function (err) {
+        child_process.execFile('npm', ['run', 'postinstall'], execOptionsHead, function(err) {
+            if(err) throw err;
+            child_process.execFile('npm', ['run', 'build'], execOptionsHead, function (err) {
                 if (err) throw err;
-                console.log('HEAD-min.tar.gz created');
-                pullTags();
+                let exist = false;
+                try {
+                    fs.renameSync(outHeadMinFinal, outHeadMinOld);
+                    exist = true;
+                } catch (e) {
+                }
+                fs.renameSync(join(visualizerHead, 'build'), outHeadMinFinal);
+                if (exist) {
+                    remove.removeSync(outHeadMinOld);
+                }
+                console.log('HEAD-min version copied');
+                targz(null, {fromBase: true}).compress(outHeadMinFinal, outHeadMinFinal + '.tar.gz', function (err) {
+                    if (err) throw err;
+                    console.log('HEAD-min.tar.gz created');
+                    buildTags();
+                });
             });
         });
     });
 }
 
-function pullTags() {
+function buildTags() {
     // Get latest tags
     child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsBuild); // make sure there are no residual local changes
     child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], gitExecOptionsBuild, function (err) {
         if (err) throw err;
-        if (tags.length) {
-            console.log('Building ' + tags.length + ' new tag(s)');
-            async.eachSeries(tags, buildTag, checkoutMaster);
+        if (newVersionTags.length) {
+            console.log('Building ' + newVersionTags.length + ' new tag(s)');
+            async.eachSeries(newVersionTags, buildTag, checkoutMaster);
         } else {
             console.log('No new tag');
             checkRelease();
@@ -129,17 +138,20 @@ function buildTag(tag, callback) {
 function doBuildTag(version, callback) {
     // Launch the building script
     console.log('Building the visualizer ' + version);
-    child_process.execFile('npm', ['install'], execOptionsBuild, function (err) {
+    child_process.execFile('npm', ['ci'], execOptionsBuild, function (err) {
         if (err) throw err;
-        child_process.execFile('npm', ['run', 'build'], execOptionsBuild, function (err) {
-            if (err) throw err;
-            let outBuild = join(outDir, version);
-            fs.renameSync(join(visualizerBuild, 'build'), outBuild);
-            console.log(version + ' version copied');
-            targz(null, {fromBase: true}).compress(outBuild, outBuild + '.tar.gz', function (err) {
+        child_process.execFile('npm', ['run', 'postinstall'], execOptionsBuild, function(err) {
+            if(err) throw err;
+            child_process.execFile('npm', ['run', 'build'], execOptionsBuild, function (err) {
                 if (err) throw err;
-                console.log(version + '.tar.gz created');
-                callback();
+                let outBuild = join(outDir, version);
+                fs.renameSync(join(visualizerBuild, 'build'), outBuild);
+                console.log(version + ' version copied');
+                targz(null, {fromBase: true}).compress(outBuild, outBuild + '.tar.gz', function (err) {
+                    if (err) throw err;
+                    console.log(version + '.tar.gz created');
+                    callback();
+                });
             });
         });
     });
@@ -154,17 +166,22 @@ function checkoutMaster() {
 }
 
 function linkLatest() {
-    if (latest) {
-        let latestPath = join(outDir, 'latest');
-        console.log('Creating link to new latest release : ' + latest);
-        replaceSymlink(join(outDir, latest), latestPath);
-        replaceSymlink(join(outDir, latest + '.tar.gz'), latestPath + '.tar.gz');
+    const list = getBuiltReleaseList(true);
+    const latest = list[0];
+    if(latest) {
+        aliases.set('latest', latest);
+    }
+    for(let [alias, version] of aliases.entries()) {
+        let latestPath = join(outDir, alias);
+        console.log(`Creating alias ${alias} to ${version}`);
+        replaceSymlink(join(outDir, version), latestPath);
+        replaceSymlink(join(outDir, version + '.tar.gz'), latestPath + '.tar.gz');
     }
     checkRelease();
 }
 
 function checkRelease() {
-    let stableList = getBuildedReleaseList(true);
+    let stableList = getBuiltReleaseList(true);
     if (!stableList.length) {
         console.log('No release found, building latest stable tag');
         let tags = child_process.execFileSync('git', ['tag', '-l'], gitExecOptionsBuild).toString();
@@ -174,7 +191,6 @@ function checkRelease() {
             finish();
         } else {
             let tag = list[0];
-            latest = tag;
             buildTag(tag, linkLatest);
         }
     } else {
@@ -184,7 +200,7 @@ function checkRelease() {
 
 function finish() {
     // create versions.json
-    let items = getBuildedReleaseList();
+    let items = getBuiltReleaseList();
     items.unshift('HEAD', 'HEAD-min', 'latest');
     fs.writeFileSync(join(outDir, 'versions.json'), JSON.stringify(items));
     console.log('Visualizer update finished');
@@ -217,7 +233,7 @@ function getFilter(onlyStable) {
     };
 }
 
-function getBuildedReleaseList(onlyStable) {
+function getBuiltReleaseList(onlyStable) {
     let items = fs.readdirSync(outDir).filter(getFilter(onlyStable));
     items.sort(semver.rcompare);
     return items;
