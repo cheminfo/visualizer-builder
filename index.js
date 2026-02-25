@@ -113,7 +113,10 @@ function updateHeadMin() {
 
 function buildTags() {
     // Get latest tags
-    child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsBuild); // make sure there are no residual local changes
+    // make sure there are no residual local changes
+    child_process.execFileSync('git', ['reset', '--hard'], gitExecOptionsBuild);
+    // Make sure we get back on master, in case we had checked out a tag on a version branch
+    child_process.execFileSync('git', ['checkout', 'master'], gitExecOptionsBuild);
     child_process.execFile('git', ['pull', '--no-stat', '--tags', 'origin', 'master'], gitExecOptionsBuild, function (err) {
         if (err) throw err;
         if (newVersionTags.length) {
